@@ -1,0 +1,36 @@
+buildscript {
+	ext.safeExtGet = {prop, fallback ->
+		rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+	}
+	repositories {
+		google()
+		gradlePluginPortal()
+	}
+	dependencies {
+		classpath("com.android.tools.build:gradle:7.2.0")
+	}
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'com.facebook.react'
+
+android {
+	compileSdkVersion safeExtGet('compileSdkVersion', 31)
+
+	defaultConfig {
+		minSdkVersion safeExtGet('minSdkVersion', 21)
+		targetSdkVersion safeExtGet('targetSdkVersion', 31)
+	}
+}
+
+repositories {
+	maven {
+		url "$projectDir/../node_modules/react-native/android"
+	}
+	mavenCentral()
+	google()
+}
+
+dependencies {
+	implementation 'com.facebook.react:react-native:+'
+}
