@@ -8,7 +8,7 @@ It leverages actual OS primitives: `UIMenu` (iOS 14+), `UIPickerView` (iOS Wheel
 
 | iOS (Dropdown Mode) | iOS (Dialog/Wheel Mode) | Android |
 |:---:|:---:|:---:|
-| *[Insert Screenshot of iOS Select with open Menu]* | *[Insert Screenshot of iOS Bottom Wheel picker]* | *[Insert Screenshot of Android Dropdown]* |
+| ![react-native-native-select-dropdown (3)](https://github.com/user-attachments/assets/8a65c76b-f0a8-4f89-88d3-49000abe354d) | *![react-native-native-select-wheel](https://github.com/user-attachments/assets/71d98f6c-984a-49e8-bc98-abbfb86de535) | ![untitled](https://github.com/user-attachments/assets/5936637a-e63a-445c-9c9f-3a05940b6f9e) |
 | *Native UIMenu (iOS 14+)* | *Classic UIPickerView* | *Native AppCompatSpinner* |
 
 ## Why this library?
