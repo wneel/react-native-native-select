@@ -1,12 +1,10 @@
 {
 	"name": "react-native-native-select",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "react-native-native-select is a strictly native, performant Select component for React Native built exclusively for the New Architecture.",
-
 	"main": "src/index.ts",
 	"react-native": "src/index.ts",
 	"types": "src/index.ts",
-
 	"source": "src/index",
 	"files": [
 		"src",
@@ -20,8 +18,26 @@
 		"!**/__fixtures__",
 		"!**/__mocks__"
 	],
-	"keywords": ["react-native", "ios", "android", "picker", "dropdown", "select", "input select", "new architecture", "typescript", "native-module"],
-	"repository": "https://github.com/wneel/react-native-native-select",
+	"keywords": [
+		"react-native",
+		"ios",
+		"android",
+		"picker",
+		"dropdown",
+		"select",
+		"input select",
+		"new architecture",
+		"typescript",
+		"native-module"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/wneel/react-native-native-select.git"
+	},
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	},
 	"author": "Wayan NEEL <66263633+wneel@users.noreply.github.com> (https://github.com/wneel)",
 	"license": "MIT",
 	"bugs": {
