@@ -1,5 +1,6 @@
 #import "RTNSelect.h"
 #import <React/RCTComponent.h>
+#import <React/RCTConversions.h>
 
 #import <react/renderer/components/RTNSelectSpec/ComponentDescriptors.h>
 #import <react/renderer/components/RTNSelectSpec/EventEmitters.h>
@@ -39,13 +40,10 @@ using namespace facebook::react;
 		_pickerView.delegate = self;
 		_pickerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 
-		_button = [UIButton buttonWithType:UIButtonTypeSystem];
+		_button = [UIButton buttonWithType:UIButtonTypeCustom];
 		_button.frame = self.bounds;
 		_button.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-
-		// Style du bouton (alignement à gauche, couleur noire pour le texte)
 		_button.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
-		[_button setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
 
 		if (@available(iOS 14.0, *)) {
 			_button.showsMenuAsPrimaryAction = YES;
@@ -55,6 +53,8 @@ using namespace facebook::react;
 
 		[self addSubview:_pickerView];
 		[self addSubview:_button];
+
+		[self applyTextColor:nil];
 	}
 
 	return self;
@@ -67,7 +67,22 @@ using namespace facebook::react;
 }
 
 // ============================================================================
-// Gestion du Menu Flottant (Dropdown)
+// Core Text Color Logic (KVC)
+// ============================================================================
+
+- (void)applyTextColor:(UIColor *)color {
+	UIColor *resolvedColor = color ?: [UIColor labelColor];
+
+	[_pickerView setValue:resolvedColor forKey:@"textColor"];
+
+	[_button setTitleColor:resolvedColor forState:UIControlStateNormal];
+
+	[_pickerView reloadAllComponents];
+	[self updateButtonMenu];
+}
+
+// ============================================================================
+// Managing the Dropdown Menu
 // ============================================================================
 
 - (void)updateButtonMenu {
@@ -96,7 +111,7 @@ using namespace facebook::react;
 }
 
 // ============================================================================
-// Méthode unifiée de sélection (appelée par Picker ou Dropdown)
+// Unified selection method (Picker or Dropdown)
 // ============================================================================
 
 - (void)selectIndex:(NSInteger)index fromSource:(NSString *)source {
@@ -139,6 +154,7 @@ using namespace facebook::react;
 	bool optionsChanged = oldViewProps.options != newViewProps.options;
 	bool indexChanged = oldViewProps.selectedIndex != newViewProps.selectedIndex;
 	bool modeChanged = oldViewProps.mode != newViewProps.mode;
+	bool textColorChanged = oldViewProps.textColor != newViewProps.textColor;
 
 	if (optionsChanged) {
 		_options = newViewProps.options;
@@ -151,6 +167,11 @@ using namespace facebook::react;
 	[super updateProps:props oldProps:oldProps];
 
 	dispatch_async(dispatch_get_main_queue(), ^{
+		if (textColorChanged) {
+			UIColor *newColor = RCTUIColorFromSharedColor(newViewProps.textColor);
+			[self applyTextColor:newColor];
+		}
+
 		if (optionsChanged) {
 			[self->_pickerView reloadAllComponents];
 			[self updateButtonMenu];
@@ -207,6 +228,12 @@ using namespace facebook::react;
 			self->_pickerView.hidden = NO;
 			self->_button.hidden = YES;
 		}
+	});
+}
+
+- (void)setTextColor:(UIColor *)color {
+	dispatch_async(dispatch_get_main_queue(), ^{
+		[self applyTextColor:color];
 	});
 }
 
