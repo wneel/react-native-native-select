@@ -1,5 +1,18 @@
 # react-native-native-select
 
+<p>
+	<a href="https://github.com/wneel/react-native-native-select/blob/HEAD/LICENSE">
+		<img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="React Native Wheel Picker is released under the MIT license." />
+	</a>
+	<a href="https://www.npmjs.com/package/wneel/react-native-native-select">
+		<img src="https://img.shields.io/npm/v/react-native-native-select?color=brightgreen&label=npm%20package" alt="Current npm package version." />
+	</a>
+	<a href="https://www.npmjs.com/package/wneel/react-native-native-select">
+		<img src="https://img.shields.io/npm/dm/react-native-native-select" alt="Number of downloads per week." />
+	</a>
+</p>
+
+
 A strictly native, performant Select component for React Native built exclusively for the **New Architecture**.
 
 It leverages actual OS primitives: `UIMenu` (iOS 14+), `UIPickerView` (iOS Wheel), and `AppCompatSpinner` (Android), offering a truly native look and feel that JS-based libraries cannot match.
@@ -8,7 +21,7 @@ It leverages actual OS primitives: `UIMenu` (iOS 14+), `UIPickerView` (iOS Wheel
 
 | iOS (Dropdown Mode) | iOS (Dialog/Wheel Mode) | Android |
 |:---:|:---:|:---:|
-| ![react-native-native-select-dropdown](https://github.com/user-attachments/assets/8a65c76b-f0a8-4f89-88d3-49000abe354d) | ![react-native-native-select-wheel](https://github.com/user-attachments/assets/71d98f6c-984a-49e8-bc98-abbfb86de535) | ![react-native-native-select-android](https://github.com/user-attachments/assets/5936637a-e63a-445c-9c9f-3a05940b6f9e) |
+| <img src="https://github.com/user-attachments/assets/8a65c76b-f0a8-4f89-88d3-49000abe354d" height="300" /> | <img src="https://github.com/user-attachments/assets/71d98f6c-984a-49e8-bc98-abbfb86de535" height="300" /> | <img src="https://github.com/user-attachments/assets/5936637a-e63a-445c-9c9f-3a05940b6f9e" height="300" /> |
 | *Native UIMenu (iOS 14+)* | *Classic UIPickerView* | *Native AppCompatSpinner* |
 
 ## Why this library?
