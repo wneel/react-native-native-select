@@ -8,7 +8,7 @@ It leverages actual OS primitives: `UIMenu` (iOS 14+), `UIPickerView` (iOS Wheel
 
 | iOS (Dropdown Mode) | iOS (Dialog/Wheel Mode) | Android |
 |:---:|:---:|:---:|
-| ![react-native-native-select-dropdown (3)](https://github.com/user-attachments/assets/8a65c76b-f0a8-4f89-88d3-49000abe354d) | *![react-native-native-select-wheel](https://github.com/user-attachments/assets/71d98f6c-984a-49e8-bc98-abbfb86de535) | ![untitled](https://github.com/user-attachments/assets/5936637a-e63a-445c-9c9f-3a05940b6f9e) |
+| ![react-native-native-select-dropdown](https://github.com/user-attachments/assets/8a65c76b-f0a8-4f89-88d3-49000abe354d) | ![react-native-native-select-wheel](https://github.com/user-attachments/assets/71d98f6c-984a-49e8-bc98-abbfb86de535) | ![react-native-native-select-android](https://github.com/user-attachments/assets/5936637a-e63a-445c-9c9f-3a05940b6f9e) |
 | *Native UIMenu (iOS 14+)* | *Classic UIPickerView* | *Native AppCompatSpinner* |
 
 ## Why this library?
@@ -97,6 +97,7 @@ Please take a look at this [Android example usage](./tests/android_demo.tsx) bec
 | **`options`** | `string[]` | **Yes** | An array of strings to display in the list. |
 | **`selectedIndex`** | `number` | No | The index of the currently selected item. Defaults to `0`. |
 | **`mode`** | `'dropdown' \| 'dialog'` | No | **iOS Only.** <br>`dropdown`: Uses `UIMenu` (Modern iOS 14+). <br>`dialog`: Uses `UIPickerView` (Classic Wheel). <br> *On Android, this prop is ignored as it always uses the native Spinner.* |
+| **`textColor`** | `ColorValue` | No | **iOS only.** Custom text color for the picker. Overrides the system's default Light/Dark mode colors. Accepts any standard React Native color format (e.g., `'#FF0000'`, `'red'`, `'rgba(0,0,0,0.5)'`). |
 | **`onValueChange`** | `function` | No | Callback fired when an item is selected. Returns `{ value: string, index: number }`. |
 | **`style`** | `ViewStyle` | No | Standard style prop. **Note:** You must define `width` and `height` for the view to render correctly. |
 
