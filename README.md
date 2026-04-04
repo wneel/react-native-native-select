@@ -4,10 +4,10 @@
 	<a href="https://github.com/wneel/react-native-native-select/blob/HEAD/LICENSE">
 		<img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="React Native Wheel Picker is released under the MIT license." />
 	</a>
-	<a href="https://www.npmjs.com/package/wneel/react-native-native-select">
+	<a href="https://www.npmjs.com/package/react-native-native-select">
 		<img src="https://img.shields.io/npm/v/react-native-native-select?color=brightgreen&label=npm%20package" alt="Current npm package version." />
 	</a>
-	<a href="https://www.npmjs.com/package/wneel/react-native-native-select">
+	<a href="https://www.npmjs.com/package/react-native-native-select">
 		<img src="https://img.shields.io/npm/dm/react-native-native-select" alt="Number of downloads per week." />
 	</a>
 </p>
