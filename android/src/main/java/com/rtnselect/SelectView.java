@@ -37,6 +37,7 @@ public class SelectView extends AppCompatSpinner implements AdapterView.OnItemSe
 
 	private void init() {
 		this.setOnItemSelectedListener(this);
+		this.setBackground(null);
 	}
 
 	@Override
