@@ -59,7 +59,7 @@ If you need any of the features in the right-hand columns, use one of those libr
 
 ## Requirements
 
-* **React Native:** `>= 0.71.0` (declared as a peer dependency, along with `react`).
+* **React Native:** `>= 0.80.0` (declared as a peer dependency, along with `react`). The codegen spec imports `codegenNativeComponent` and the `CodegenTypes` namespace from the `react-native` root, which only re-exports them from 0.80 onward. On 0.71-0.79, use `1.2.1`.
 * **Architecture:** the New Architecture, enabled. `RCT_NEW_ARCH_ENABLED=1` must have been set when you ran `pod install`.
 * **iOS:** 14.0+ for `dropdown` mode, since `UIMenu` and `showsMenuAsPrimaryAction` are gated behind an availability check. The podspec deployment target is 11.0, and `dialog` mode works all the way down.
 * **Android:** `compileSdkVersion` and `targetSdkVersion` default to 31 and `minSdkVersion` to 21, each read through `safeExtGet` so your root `ext` values win.

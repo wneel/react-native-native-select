@@ -4,7 +4,18 @@ All notable changes to this project are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Dates are npm publish dates. Where the git history does not record what shipped in a release, the entry says so instead of filling the gap.
 
-## [Unreleased]
+## [2.0.0] - 2026-09-03
+
+### Changed
+
+- **Breaking.** The codegen spec now imports everything from the public `react-native` root entry point instead of deep paths: `codegenNativeComponent` (was `react-native/Libraries/Utilities/codegenNativeComponent`), `ViewProps` (was `react-native/Libraries/Components/View/ViewPropTypes`), and the codegen types, now reached through the `CodegenTypes` namespace (were `react-native/Libraries/Types/CodegenTypes`). React Native's Strict TypeScript API, opt-in since 0.80 and the default from 0.87, maps every deep path to `null` in its `exports` map, so a consumer using it could not resolve the spec's imports at all: the spec fell back to `any`, and with it every `onValueChange` handler in their own code became an implicit `any`. The generated native artifacts are unchanged, verified by diffing the codegen schema before and after.
+- **Breaking.** `peerDependencies.react-native` raised from `>=0.71.0` to `>=0.80.0`. The root re-exports the spec now relies on land in 0.80.0 and are absent from both the type definitions and the runtime `index.js` of 0.79.0 and earlier, where `codegenNativeComponent` would resolve to `undefined` at module load. Anyone below 0.80 stays on 1.2.1.
+
+### Notes
+
+- No API, prop or behaviour change, and no change to either platform's native code.
+
+## [1.2.1] - 2026-08-27
 
 ### Documentation
 
@@ -72,7 +83,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Demo screens for both platforms in `tests/ios_demo.tsx` and `tests/android_demo.tsx`.
 - README with the three preview GIFs (dropdown, wheel, Android).
 
-[Unreleased]: https://github.com/wneel/react-native-native-select/compare/af2cdc8...HEAD
+[Unreleased]: https://github.com/wneel/react-native-native-select/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/wneel/react-native-native-select/compare/v1.2.1...v2.0.0
+[1.2.1]: https://github.com/wneel/react-native-native-select/releases/tag/v1.2.1
 [1.2.0]: https://github.com/wneel/react-native-native-select/commit/af2cdc8
 [1.1.1]: https://github.com/wneel/react-native-native-select/releases/tag/v1.1.1
 [1.1.0]: https://github.com/wneel/react-native-native-select/releases/tag/v1.1.0

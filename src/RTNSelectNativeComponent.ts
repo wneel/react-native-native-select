@@ -1,20 +1,18 @@
-import codegenNativeComponent from 'react-native/Libraries/Utilities/codegenNativeComponent';
+import { codegenNativeComponent } from 'react-native';
 
-import type { ColorValue, HostComponent } from 'react-native';
-import type { ViewProps } from 'react-native/Libraries/Components/View/ViewPropTypes';
-import type { Int32, DirectEventHandler, WithDefault } from 'react-native/Libraries/Types/CodegenTypes';
+import type { CodegenTypes, ColorValue, HostComponent, ViewProps } from 'react-native';
 
 type OnChangeEvent = Readonly<{
 	value: string;
-	index: Int32;
+	index: CodegenTypes.Int32;
 }>;
 
 export interface NativeProps extends ViewProps {
 	options: ReadonlyArray<string>;
-	selectedIndex?: Int32;
-	mode?: WithDefault<'dialog' | 'dropdown', 'dialog'>; // iOS only
+	selectedIndex?: CodegenTypes.Int32;
+	mode?: CodegenTypes.WithDefault<'dialog' | 'dropdown', 'dialog'>; // iOS only
 	textColor?: ColorValue; // iOS only
-	onValueChange?: DirectEventHandler<OnChangeEvent>;
+	onValueChange?: CodegenTypes.DirectEventHandler<OnChangeEvent>;
 }
 
 export default codegenNativeComponent<NativeProps>(
