@@ -1,6 +1,6 @@
 {
 	"name": "react-native-native-select",
-	"version": "1.2.1",
+	"version": "2.0.0",
 	"description": "react-native-native-select is a strictly native, performant Select component for React Native built exclusively for the New Architecture.",
 	"main": "src/index.ts",
 	"react-native": "src/index.ts",
@@ -46,7 +46,7 @@
 	"homepage": "https://github.com/wneel/react-native-native-select#readme",
 	"peerDependencies": {
 		"react": "*",
-		"react-native": ">=0.71.0"
+		"react-native": ">=0.80.0"
 	},
 	"codegenConfig": {
 		"name": "RTNSelectSpec",
