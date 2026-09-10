@@ -1,2 +1,6 @@
 .vscode
 node_modules/
+
+# Local build and packaging artifacts
+android/.gradle/
+*.tgz

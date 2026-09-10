@@ -30,7 +30,7 @@ There is no JS rendering logic in this package. When your user opens the list, t
 | :--- | :--- | :--- | :--- |
 | iOS | `dropdown` | A real `UIMenu` built from `UIAction`s, attached to a `UIButton` with `showsMenuAsPrimaryAction = YES` (iOS 14+). The selected row carries `UIMenuElementStateOn`, so the system draws its own checkmark. | `ios/RTNSelect.mm` |
 | iOS | `dialog` (default) | `UIPickerView`, the classic wheel, with this view as its own dataSource and delegate. | `ios/RTNSelect.mm` |
-| Android | any | `AppCompatSpinner` with an `ArrayAdapter` over the platform `simple_spinner_item` and `simple_spinner_dropdown_item` layouts. | `android/src/main/java/com/rtnselect/SelectView.java` |
+| Android | any | `AppCompatSpinner`, pinned to `MODE_DROPDOWN` so the host app's theme cannot switch it to a dialog, with an `ArrayAdapter` over the platform `simple_spinner_item` and `simple_spinner_dropdown_item` layouts. | `android/src/main/java/com/rtnselect/SelectView.java` |
 
 On iOS a single `RCTViewComponentView` holds both the picker and the button, and `mode` decides which one is hidden. Nothing is custom-drawn on either platform: no `Modal`, no `FlatList`, no wheel re-implemented in JS.
 
@@ -238,8 +238,8 @@ Three details make the difference between this working and nearly working:
 | Prop | Type | Required | Description |
 | :--- | :--- | :---: | :--- |
 | **`options`** | `ReadonlyArray<string>` | **Yes** | The rows to display. Strings only. |
-| **`selectedIndex`** | `number` | No | Index of the selected row. The native views start at `0`. Behaves as a controlled value on iOS; see the Android caveat below. |
-| **`mode`** | `'dialog' \| 'dropdown'` | No | **iOS only.** `dialog` (the codegen default) uses `UIPickerView`, the classic wheel. `dropdown` uses the iOS 14+ `UIMenu` pull-down. Ignored on Android, which always draws its spinner. |
+| **`selectedIndex`** | `number` | No | Index of the selected row. The native views start at `0`. A negative index means "nothing selected yet" and is ignored rather than applied. |
+| **`mode`** | `'dialog' \| 'dropdown'` | No | **iOS only.** `dialog` (the codegen default) uses `UIPickerView`, the classic wheel. `dropdown` uses the iOS 14+ `UIMenu` pull-down. Ignored on Android, which always draws its spinner dropdown. |
 | **`textColor`** | `ColorValue` | No | **iOS only.** Overrides the text color of both the wheel and the button title. Defaults to `UIColor.labelColor`, which already follows light and dark mode, so set this only when you need to override the system. |
 | **`onValueChange`** | `(event) => void` | No | Fired on selection. Read `event.nativeEvent.value` (`string`) and `event.nativeEvent.index` (`number`). |
 | **`style`** | `ViewStyle` | No | Standard style prop. Give it a `width` and a `height`, or Flexbox constraints that produce them. |
@@ -255,9 +255,8 @@ onValueChange={(e) => {
 
 Nothing here is a bug to be fixed later, it is what wrapping two different OS widgets behind one component costs. Better said out loud.
 
-* **`mode` and `textColor` do nothing on Android.** In `SelectViewManager`, `setMode` has an empty body and `setTextColor` carries a comment saying so. They exist only because the codegen-generated `RTNSelectManagerInterface` requires them, and a missing method there is a build failure (that is exactly what v1.1.1 fixed). Style Android text through the overlay pattern instead.
-* **Android does not reliably reflect a controlled `selectedIndex`.** `AppCompatSpinner` owns its own selection state and the manager pushes the prop through `setSelection`, which posts the update to the next frame. Treat the Android widget as uncontrolled and render the current value yourself, which is the overlay pattern again.
-* **Writing `selectedIndex` on Android emits a change event.** `setSelection` reports back through `topValueChange` as well as the adapter's own `onItemSelected`, so a state update driven from JS can echo. If your handler does more than `setState`, guard it against the value it already holds.
+* **`mode` and `textColor` do nothing on Android.** In `SelectViewManager` both setters carry a comment saying so. They exist only because the codegen-generated `RTNSelectManagerInterface` requires them, and a missing method there is a build failure (that is exactly what v1.1.1 fixed). Style Android text through the overlay pattern instead.
+* **Android pins its spinner to `MODE_DROPDOWN`.** The mode an `AppCompatSpinner` takes otherwise comes from the host app theme's `spinnerStyle`. AppCompat's own sets `dropdown`, but a vendor theme can hand back `dialog`, where the popup is an `AlertDialog` built on the React context. Since 2.0.2 the view constructs itself in dropdown mode so the widget behaves the same on every device.
 * **Below iOS 14, `dropdown` degrades to an inert button.** Both `showsMenuAsPrimaryAction` and the menu construction sit behind `@available(iOS 14.0, *)`, so on iOS 11 to 13 the button renders with no menu attached. Use `dialog` if you still support those versions.
 * **iOS applies props on the main queue.** `updateProps` diffs `options`, `selectedIndex`, `mode` and `textColor`, then dispatches the UIKit work asynchronously. A `selectedIndex` change animates the wheel; expect the visual update one turn later, not synchronously with your `setState`.
 
@@ -368,7 +367,7 @@ Its `opacity` is `0` (or below `0.02`). See the overlay pattern section.
 Expected, they are iOS only. See Platform differences.
 
 **Android fires `onValueChange` when I set `selectedIndex` from JS.**
-Expected too, and documented in Platform differences. Guard your handler against a value that has not changed.
+Fixed in 2.0.2. A selection this component makes on your behalf no longer travels back as a change, and neither does the row-0 selection the adapter takes when it attaches.
 
 ## Contributing
 

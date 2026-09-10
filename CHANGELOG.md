@@ -4,6 +4,32 @@ All notable changes to this project are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Dates are npm publish dates. Where the git history does not record what shipped in a release, the entry says so instead of filling the gap.
 
+## [2.0.2] - unreleased
+
+Android only. Nothing on the iOS side changed, and the JS API is untouched.
+
+### Fixed
+
+- **Writing `selectedIndex` no longer echoes an `onValueChange` back to JS.** The two ways a selection can change were indistinguishable, because the spinner's popup reports the row a person picked by calling the view's own `setSelection`, the same method the prop arrives through. `setSelection` therefore emitted unconditionally, and `onItemSelected` emitted again on top, so one tap produced two events and a prop write produced one for a value JS had just set. The view now tracks whether the list was opened by the user and emits once, for a real pick only.
+- **No more spurious `onValueChange(0)` at mount.** Attaching an adapter makes an `AbsSpinner` select row 0 on its own, and that fired as a user change. iOS never reported it, so a component with no `selectedIndex` saw its handler run unprompted on Android only.
+- **A negative `selectedIndex` no longer crashes the host app.** Callers spell "nothing selected yet" as the `-1` an `indexOf` returns, and a spinner has no empty selection. The bounds check was `getCount() > position`, which passes for `-1`, so it reached `ArrayAdapter.getItem(-1)` and threw `IndexOutOfBoundsException`. Out-of-range indices are now ignored the way iOS ignores them.
+- **`selectedIndex` is no longer lost when it arrives before `options`.** Fabric applies props in whatever order RawProps yields, and a selection written against a null adapter used to be dropped, leaving the widget on row 0 and reporting `value: "unknown"`. The requested index is held and replayed once the adapter exists.
+- **The widget stops rendering a stale row.** React Native swallows the `requestLayout()` that `AbsSpinner.setAdapter` depends on, so the spinner never re-measured its selected row and kept drawing the previous one. It now re-runs measure and layout on its own frame, the same workaround `ReactPicker` and `ReactSwitch` carry.
+- **An unchanged `options` array no longer rebuilds the adapter.** Fabric re-applies every prop when any one of them changes, and callers routinely build the array inline, so most renders reset the adapter (and with it the spinner's selection) for an identical list.
+
+### Changed
+
+- **Events go through the `EventDispatcher` instead of `RCTEventEmitter`.** The legacy call only still worked under bridgeless through the `useFabricInterop` shim, which logged a soft exception on every event and dispatched with a surface id of `-1`. React Native's own message says it "will stop working with interop disabled".
+- **The Android popup mode is pinned to `MODE_DROPDOWN`.** An `AppCompatSpinner` takes its mode from the host app theme's `spinnerStyle` at construction. AppCompat's own sets `dropdown`, but a vendor theme can hand back `dialog`, where the popup is an `AlertDialog` built on the React context. Pinning it makes the widget behave the same whatever theme it is dropped into. `mode` remains an iOS-only prop.
+
+### Packaging
+
+- `!android/.gradle` added to `files`. The 2.0.0 tarball shipped a stale gradle lock directory.
+
+### Notes
+
+- 2.0.1 was packed locally and never published; its `-1` guard is folded in here.
+
 ## [2.0.0] - 2026-09-03
 
 ### Changed
