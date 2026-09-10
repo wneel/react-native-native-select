@@ -1,6 +1,6 @@
 {
 	"name": "react-native-native-select",
-	"version": "2.0.0",
+	"version": "2.0.2",
 	"description": "react-native-native-select is a strictly native, performant Select component for React Native built exclusively for the New Architecture.",
 	"main": "src/index.ts",
 	"react-native": "src/index.ts",
@@ -12,6 +12,7 @@
 		"ios",
 		"react-native-native-select.podspec",
 		"!android/build",
+		"!android/.gradle",
 		"!ios/build",
 		"!tests",
 		"!**/__tests__",

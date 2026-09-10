@@ -4,7 +4,7 @@ All notable changes to this project are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Dates are npm publish dates. Where the git history does not record what shipped in a release, the entry says so instead of filling the gap.
 
-## [2.0.2] - unreleased
+## [2.0.2] - 2026-09-10
 
 Android only. Nothing on the iOS side changed, and the JS API is untouched.
 
