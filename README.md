@@ -15,24 +15,32 @@
 
 A strictly native, performant Select component for React Native built exclusively for the **New Architecture**.
 
-There is no JS rendering logic in this package. When your user opens the list, they are touching `UIMenu`, `UIPickerView` or `AppCompatSpinner` directly: the same widgets the operating system uses for its own pickers, with their animations, their dark mode and their accessibility tree.
+There is no JS rendering logic in this package. When your user opens the list, they are touching `UIMenu`, `UIPickerView` or Android's dropdown `ListPopupWindow` directly: the same widgets the operating system uses for its own pickers, with their animations, their dark mode and their accessibility tree.
+
+You draw the field, the OS draws the list: wrap your own field in the `Select`, and a tap on it opens the native list.
+
+```tsx
+<Select options={options} selectedIndex={index} onValueChange={(e) => setIndex(e.nativeEvent.index)}>
+	<MyField value={options[index]} />
+</Select>
+```
 
 ## Preview
 
 | iOS (Dropdown Mode) | iOS (Dialog/Wheel Mode) | Android |
 |:---:|:---:|:---:|
 | <img src="https://github.com/user-attachments/assets/8a65c76b-f0a8-4f89-88d3-49000abe354d" height="300" /> | <img src="https://github.com/user-attachments/assets/71d98f6c-984a-49e8-bc98-abbfb86de535" height="300" /> | <img src="https://github.com/user-attachments/assets/5936637a-e63a-445c-9c9f-3a05940b6f9e" height="300" /> |
-| *Native UIMenu (iOS 14+)* | *Classic UIPickerView* | *Native AppCompatSpinner* |
+| *Native UIMenu (iOS 14+)* | *Classic UIPickerView* | *Native dropdown list* |
 
 ## What it actually renders
 
 | Platform | Mode | Native widget | Source |
 | :--- | :--- | :--- | :--- |
-| iOS | `dropdown` | A real `UIMenu` built from `UIAction`s, attached to a `UIButton` with `showsMenuAsPrimaryAction = YES` (iOS 14+). The selected row carries `UIMenuElementStateOn`, so the system draws its own checkmark. | `ios/RTNSelect.mm` |
-| iOS | `dialog` (default) | `UIPickerView`, the classic wheel, with this view as its own dataSource and delegate. | `ios/RTNSelect.mm` |
-| Android | any | `AppCompatSpinner`, pinned to `MODE_DROPDOWN` so the host app's theme cannot switch it to a dialog, with an `ArrayAdapter` over the platform `simple_spinner_item` and `simple_spinner_dropdown_item` layouts. | `android/src/main/java/com/rtnselect/SelectView.java` |
+| iOS | with children, or `dropdown` | A real `UIMenu` built from `UIAction`s, attached to a `UIButton` with `showsMenuAsPrimaryAction = YES` (iOS 14+). Your children are drawn inside that button, so the menu grows out of your own field. The selected row carries `UIMenuElementStateOn`, so the system draws its own checkmark. | `ios/RTNSelect.mm` |
+| iOS | `dialog` (default), no children | `UIPickerView`, the classic wheel, with this view as its own dataSource and delegate. | `ios/RTNSelect.mm` |
+| Android | any | A container around your children that opens an `androidx.appcompat.widget.ListPopupWindow` when tapped: the same window an `AppCompatSpinner` opens in dropdown mode, anchored under the field, over the platform `simple_spinner_dropdown_item` layout. | `android/src/main/java/com/rtnselect/SelectView.java` |
 
-On iOS a single `RCTViewComponentView` holds both the picker and the button, and `mode` decides which one is hidden. Nothing is custom-drawn on either platform: no `Modal`, no `FlatList`, no wheel re-implemented in JS.
+On iOS a single `RCTViewComponentView` holds both the picker and the button, and children or `mode` decide which one shows. Nothing is custom-drawn on either platform: no `Modal`, no `FlatList`, no wheel re-implemented in JS.
 
 ## How it compares
 
@@ -40,7 +48,7 @@ The popular alternatives are mature, well documented and far more featureful tha
 
 | Library | Downloads / week | What draws the list | New Architecture | Runtime deps | Multi-select |
 | :--- | ---: | :--- | :--- | :--- | :--- |
-| **react-native-native-select** | see the badge above | The OS widget itself: `UIMenu`, `UIPickerView`, `AppCompatSpinner` | Required, old bridge unsupported | none | no |
+| **react-native-native-select** | see the badge above | The OS widget itself: `UIMenu`, `UIPickerView`, Android's dropdown list | Required, old bridge unsupported | none | no |
 | [`@react-native-picker/picker`](https://www.npmjs.com/package/@react-native-picker/picker) | 959k | Native pickers too (`RNCPicker` on iOS, dialog and dropdown pickers on Android), plus macOS and Windows | Supported, and it still ships the old-architecture code path | none | no, one `selectedValue` |
 | [`react-native-picker-select`](https://www.npmjs.com/package/react-native-picker-select) | 175k | A JS wrapper that puts `@react-native-picker/picker` inside a React `Modal` on iOS | Inherits whatever its peer picker supports | `lodash.isequal`, `lodash.isobject`, and a peer on `@react-native-picker/picker` | no |
 | [`react-native-element-dropdown`](https://www.npmjs.com/package/react-native-element-dropdown) | 167k | Pure JS: a `Modal` with a `FlatList` of rows | Works, it is JS only | `lodash` | yes, a `MultiSelect` component |
@@ -52,6 +60,7 @@ What it gives you instead is narrow and specific:
 
 * **The real widget.** Not an imitation of the platform look, the platform widget. It ages with the OS instead of against it.
 * **The interaction never touches JS.** Opening the menu, scrolling the wheel and highlighting a row are UIKit and Android View work. JS hears about it once, when the value changes.
+* **Your field, their list.** The field is yours to style, and since the `Select` is its parent, nothing you put in it can take the tap away from the list.
 * **A long list costs nothing.** A `UIMenu` of 250 rows is 250 `UIAction`s handed to UIKit, not 250 React elements virtualised by a `FlatList`.
 * **Nothing to keep in sync.** No dependencies, and the whole surface is five props.
 
@@ -101,17 +110,15 @@ export default function App() {
 			<Text style={styles.label}>Choose a fruit:</Text>
 
 			<Select
-				style={styles.select}
-				mode="dropdown"
 				options={FRUITS}
 				selectedIndex={index}
 				onValueChange={(e) => {
 					setIndex(e.nativeEvent.index); // 0
 					console.log(e.nativeEvent.value); // "Apple"
 				}}
-			/>
-
-			<Text>Selected: {FRUITS[index]}</Text>
+			>
+				<Text style={styles.field}>{FRUITS[index]}</Text>
+			</Select>
 		</View>
 	);
 }
@@ -119,36 +126,46 @@ export default function App() {
 const styles = StyleSheet.create({
 	container: { flex: 1, justifyContent: 'center', padding: 20 },
 	label: { marginBottom: 10, fontSize: 16 },
-	select: {
-		width: '100%',
-		height: 50, // width and height are load-bearing, see Troubleshooting
+	field: {
+		height: 48,
+		lineHeight: 48,
+		paddingHorizontal: 14,
+		borderRadius: 12,
+		borderWidth: 1,
+		borderColor: '#2483ff',
+		fontWeight: '600',
 	},
 });
 ```
 
 Two runnable screens live in [`tests/ios_demo.tsx`](./tests/ios_demo.tsx) and [`tests/android_demo.tsx`](./tests/android_demo.tsx). Drop either one in as your `App` component.
 
-## The overlay pattern
+## Wrapping your own field
 
-This is the part worth reading twice, and the recommended way to ship this component inside a real design system.
+This is the part worth reading twice, and the way to ship this component inside a real design system.
 
-The native widget draws itself. You cannot give `UIMenu` your border radius or teach `AppCompatSpinner` your font, and on Android the spinner does not reliably reflect a controlled `selectedIndex` (the visual state can lag behind the prop). So do not fight it: **render your own label, and stretch the `Select` over it invisibly.** The tap opens the real OS widget, the state comes back through `onValueChange`, and the box the user actually looks at is 100% yours.
-
-Since v1.2.0 the Android view calls `setBackground(null)` on init, so the spinner contributes no background of its own underneath your styling.
-
-### The 0.02 constant
+The native widget draws itself. You cannot give `UIMenu` your border radius or teach Android's list your font. So do not fight it: **draw your own field, and wrap it in the `Select`.** The tap opens the real OS list, the state comes back through `onValueChange`, and the box the user actually looks at is 100% yours.
 
 ```tsx
-opacity: 0.02 // never 0
+<Select options={options} selectedIndex={index} onValueChange={(e) => setIndex(e.nativeEvent.index)}>
+	<View style={styles.field}>
+		<Text>{options[index]}</Text>
+	</View>
+</Select>
 ```
 
-That number is the whole trick. iOS `hitTest:withEvent:` ignores views whose alpha is at or below 0.01, so an overlay at `opacity: 0` is invisible **and** untappable: you get a beautiful button that does nothing. `0.02` clears that threshold with a margin to spare and is imperceptible on screen. Android is more forgiving (the demo screen uses `0` and works), so use `0.02` everywhere and stop thinking about it.
+What the `Select` does with its children:
+
+* **They are the drawing, the `Select` is the control.** The `Select` takes every tap inside its frame before any child can. Put no buttons or text inputs in there: they would never receive a touch.
+* **On iOS, children always mean the menu.** A wheel cannot sit behind your field, so with children `mode` is ignored and the `UIMenu` opens on tap. Your field is drawn inside the menu's button, which is also what iOS 26 morphs the menu out of.
+* **On Android, the list opens under the field.** It is as wide as its widest row, never narrower than the field and never wider than the screen, and it flips above the field when there is no room below.
+* **Shadows and elevation are safe.** On Android a touch goes to the sibling with the highest elevation first, whatever the order in JS, so an elevated field next to an invisible picker could take the tap and leave the list closed. A parent sees the touch before all of its children, so here that cannot happen.
+* **The `Select` is laid out like a `View`.** Give it margins or flex like any container; it sizes to its children.
 
 ### A complete field component
 
 ```tsx
-import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { Select } from 'react-native-native-select';
 
 type Props = {
@@ -160,38 +177,23 @@ type Props = {
 
 export function SelectField({ label, options, selectedIndex, onSelect }: Props) {
 	return (
-		<View style={styles.field}>
-			<Text style={styles.label} accessible={false}>
-				{label}
+		<Select
+			options={options}
+			selectedIndex={selectedIndex}
+			onValueChange={(e) => onSelect(e.nativeEvent.index, e.nativeEvent.value)}
+			accessible={true}
+			accessibilityRole="button"
+			accessibilityLabel={`${label}, ${options[selectedIndex]}`}
+			accessibilityHint="Opens the list of options"
+		>
+			<Text style={styles.value} accessible={false}>
+				{options[selectedIndex]}
 			</Text>
-
-			<View
-				accessible={true}
-				accessibilityRole="button"
-				accessibilityLabel={`${label}, ${options[selectedIndex]}`}
-				accessibilityHint="Opens the list of options"
-			>
-				{/* Your design system draws this. */}
-				<Text style={styles.value} accessible={false}>
-					{options[selectedIndex]}
-				</Text>
-
-				{/* The real widget, stretched over it, all but invisible. */}
-				<Select
-					style={styles.overlay}
-					mode="dropdown"
-					options={options}
-					selectedIndex={selectedIndex}
-					onValueChange={(e) => onSelect(e.nativeEvent.index, e.nativeEvent.value)}
-				/>
-			</View>
-		</View>
+		</Select>
 	);
 }
 
 const styles = StyleSheet.create({
-	field: { marginBottom: 16 },
-	label: { fontSize: 13, marginBottom: 6, color: '#444' },
 	value: {
 		height: 48,
 		lineHeight: 48,
@@ -201,35 +203,29 @@ const styles = StyleSheet.create({
 		borderColor: '#2483ff',
 		fontWeight: '600',
 	},
-	overlay: {
-		position: 'absolute',
-		top: 0,
-		bottom: 0,
-		left: 0,
-		right: 0,
-		opacity: 0.02, // never 0: iOS hitTest drops taps at alpha <= 0.01
-	},
 });
 ```
 
-Usage:
+### Turning a field off
+
+Set `pointerEvents="none"` on the `Select` and it stops opening, on both platforms, without unmounting your field.
+
+### Coming from the overlay pattern (2.x)
+
+Up to 2.x the advice was to stretch an all-but-invisible `Select` over your field at `opacity: 0.02`. That still works in 3.0: a `Select` without children is still a tappable box on both platforms. But wrapping is the reason 3.0 exists, so move to it:
 
 ```tsx
-const [size, setSize] = useState(0);
+// 2.x
+<View>
+	<MyField />
+	<Select style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, opacity: 0.02 }} mode="dropdown" {...props} />
+</View>
 
-<SelectField
-	label="Size"
-	options={['Small', 'Medium', 'Large']}
-	selectedIndex={size}
-	onSelect={(index) => setSize(index)}
-/>
+// 3.0
+<Select {...props}>
+	<MyField />
+</Select>
 ```
-
-Three details make the difference between this working and nearly working:
-
-1. `position: 'absolute'` with all four edges pinned, so the overlay covers exactly the box you drew, no more.
-2. `opacity: 0.02`, for the reason above.
-3. `mode="dropdown"`, so iOS anchors a `UIMenu` to the invisible button rather than showing a wheel where your field is.
 
 ## Props
 
@@ -237,12 +233,13 @@ Three details make the difference between this working and nearly working:
 
 | Prop | Type | Required | Description |
 | :--- | :--- | :---: | :--- |
+| **`children`** | `ReactNode` | No | Your field. A tap on it opens the native list. See [Wrapping your own field](#wrapping-your-own-field). |
 | **`options`** | `ReadonlyArray<string>` | **Yes** | The rows to display. Strings only. |
 | **`selectedIndex`** | `number` | No | Index of the selected row. The native views start at `0`. A negative index means "nothing selected yet" and is ignored rather than applied. |
-| **`mode`** | `'dialog' \| 'dropdown'` | No | **iOS only.** `dialog` (the codegen default) uses `UIPickerView`, the classic wheel. `dropdown` uses the iOS 14+ `UIMenu` pull-down. Ignored on Android, which always draws its spinner dropdown. |
+| **`mode`** | `'dialog' \| 'dropdown'` | No | **iOS only, and only without children.** `dialog` (the codegen default) uses `UIPickerView`, the classic wheel. `dropdown` uses the iOS 14+ `UIMenu` pull-down. With children the menu is always used. Ignored on Android, which always opens its dropdown list. |
 | **`textColor`** | `ColorValue` | No | **iOS only.** Overrides the text color of both the wheel and the button title. Defaults to `UIColor.labelColor`, which already follows light and dark mode, so set this only when you need to override the system. |
 | **`onValueChange`** | `(event) => void` | No | Fired on selection. Read `event.nativeEvent.value` (`string`) and `event.nativeEvent.index` (`number`). |
-| **`style`** | `ViewStyle` | No | Standard style prop. Give it a `width` and a `height`, or Flexbox constraints that produce them. |
+| **`style`** | `ViewStyle` | No | Standard style prop. With children the `Select` sizes to them; without, give it a `width` and a `height`, or Flexbox constraints that produce them. |
 
 ```tsx
 onValueChange={(e) => {
@@ -255,8 +252,8 @@ onValueChange={(e) => {
 
 Nothing here is a bug to be fixed later, it is what wrapping two different OS widgets behind one component costs. Better said out loud.
 
-* **`mode` and `textColor` do nothing on Android.** In `SelectViewManager` both setters carry a comment saying so. They exist only because the codegen-generated `RTNSelectManagerInterface` requires them, and a missing method there is a build failure (that is exactly what v1.1.1 fixed). Style Android text through the overlay pattern instead.
-* **Android pins its spinner to `MODE_DROPDOWN`.** The mode an `AppCompatSpinner` takes otherwise comes from the host app theme's `spinnerStyle`. AppCompat's own sets `dropdown`, but a vendor theme can hand back `dialog`, where the popup is an `AlertDialog` built on the React context. Since 2.0.2 the view constructs itself in dropdown mode so the widget behaves the same on every device.
+* **`mode` and `textColor` do nothing on Android.** In `SelectViewManager` both setters carry a comment saying so. They exist only because the codegen-generated `RTNSelectManagerInterface` requires them, and a missing method there is a build failure (that is exactly what v1.1.1 fixed). Draw Android text in your own field instead.
+* **Android has no wheel, and draws nothing of its own.** Since 3.0 the Android view is only the container and the list: without children it is an empty, tappable box. If you show an iOS wheel inline, give Android a field (for example with `Platform.OS`).
 * **Below iOS 14, `dropdown` degrades to an inert button.** Both `showsMenuAsPrimaryAction` and the menu construction sit behind `@available(iOS 14.0, *)`, so on iOS 11 to 13 the button renders with no menu attached. Use `dialog` if you still support those versions.
 * **iOS applies props on the main queue.** `updateProps` diffs `options`, `selectedIndex`, `mode` and `textColor`, then dispatches the UIKit work asynchronously. A `selectedIndex` change animates the wheel; expect the visual update one turn later, not synchronously with your `setState`.
 
@@ -268,7 +265,8 @@ Nothing here is a bug to be fixed later, it is what wrapping two different OS wi
 * **No Expo Go, and no config plugin.** The package ships native code and requires codegen, so it needs bare React Native or an Expo prebuild.
 * **`mode` and `textColor` are iOS only** (see above).
 * **No accessibility props of its own** (see the next section).
-* **No placeholder or empty state.** With an empty `options` array the widget renders empty; there is no "Select an option" row unless you put one in `options` yourself.
+* **No placeholder or empty state.** With an empty `options` array the list does not open; there is no "Select an option" row unless you put one in `options` yourself.
+* **No interactive children.** The `Select` takes every touch inside it, so a button inside your field never fires.
 
 ### If you need multi-select
 
@@ -288,11 +286,11 @@ return (
 
 		{remaining.length > 0 && (
 			<Select
-				style={{ width: 200, height: 48 }}
-				mode="dropdown"
 				options={remaining}
 				onValueChange={(e) => setPicked([...picked, e.nativeEvent.value])}
-			/>
+			>
+				<Text style={{ width: 200, height: 48, lineHeight: 48 }}>Add an animal</Text>
+			</Select>
 		)}
 	</>
 );
@@ -306,29 +304,30 @@ The library sets no `accessibilityRole` and no `accessibilityLabel` of its own. 
 
 What comes free, because the rendered thing genuinely is the platform control:
 
-* **VoiceOver** reads a `UIMenu` as a menu and a `UIPickerView` as an adjustable picker, with the announcements and gestures users already know from the rest of iOS. **TalkBack** reads `AppCompatSpinner` as a spinner.
+* **VoiceOver** reads a `UIMenu` as a menu and a `UIPickerView` as an adjustable picker, with the announcements and gestures users already know from the rest of iOS. **TalkBack** reads the Android `Select` as a drop-down list unless you give it an `accessibilityRole`, and a double tap opens it.
 * **Dark mode** works with no code from you: the iOS default text color is `UIColor.labelColor`, and the Android spinner takes your app theme.
 * **Dynamic Type and font scale** apply, since the OS is drawing the text.
 * **Reduce Motion, Switch Control, Voice Control, external keyboards:** the platform's job, and already done.
 
-What you own is the wrapper. When you use the overlay pattern, the visual field is your own views, so give the group the semantics of one control:
+What you own is the field. Your children are your own views, so give the `Select` the semantics of one control:
 
 ```tsx
-<View
+<Select
 	accessible={true}
 	accessibilityRole="button"
 	accessibilityLabel={`${label}, ${options[selectedIndex]}`}
 	accessibilityHint="Opens the list of options"
-	accessibilityState={{ disabled }}
+	options={options}
+	selectedIndex={selectedIndex}
+	onValueChange={handleChange}
 >
 	<Text accessible={false}>{options[selectedIndex]}</Text>
-	<Select style={styles.overlay} mode="dropdown" options={options} selectedIndex={selectedIndex} onValueChange={handleChange} />
-</View>
+</Select>
 ```
 
 Three things to get right there:
 
-1. `accessible={true}` on the wrapper, `accessible={false}` on the visual children, so the screen reader announces one control instead of a label, a value and an unnamed native view.
+1. `accessible={true}` on the `Select`, `accessible={false}` on the visual children, so the screen reader announces one control instead of a label, a value and an unnamed native view. Without a label of your own, iOS still reads the selected option.
 2. An `accessibilityLabel` that carries both the field name and the current value. "Size, Medium" tells a blind user where they are; "Medium" alone does not.
 3. `accessibilityRole="button"`, because from the outside that is what your field is: a thing you press to open a list.
 
@@ -338,8 +337,9 @@ Worth knowing before you depend on it, since the whole implementation is short e
 
 * **A true Fabric component via codegen.** `src/RTNSelectNativeComponent.ts` is a single `codegenNativeComponent<NativeProps>('RTNSelect')` call, and `codegenConfig` in `package.json` names the spec `RTNSelectSpec`. The rest of the implementation is Objective-C++ and Java.
 * **The package ships raw TypeScript.** `main`, `react-native`, `types` and `source` all point at `src/index.ts`. There is no build step and no `dist/`, so the code you read on GitHub is exactly the code your bundler compiles.
-* **Two TypeScript files, three iOS source files, three Java files.** No dependencies, no vendored assets, no generated code checked in.
+* **Two TypeScript files, three iOS source files, four Java files.** No dependencies, no vendored assets, no generated code checked in.
 * **iOS event path:** selection funnels through one `selectIndex:fromSource:` method that updates state, re-marks the `UIMenu` checkmark, and emits through the Fabric `RTNSelectEventEmitter`.
+* **Android touch path:** `SelectView` extends React Native's `ReactViewGroup`, intercepts every touch inside it, and opens the list on a tap (a `GestureDetector` single tap, so a drag that a parent scroll view takes over does not open it).
 * **Android event path:** `SelectView` dispatches `topValueChange`, which `getExportedCustomDirectEventTypeConstants` maps to the JS prop `onValueChange`.
 * **One thing to know about `textColor`:** on iOS it reaches the wheel through `setValue:forKey:@"textColor"`, key-value coding against a `UIPickerView` key that Apple does not document. It has worked for years and it is how everyone colors that widget, but it is not public API, and it is the one line in this package that could break on a future iOS release. The dropdown button's title color goes through the documented `setTitleColor:forState:`.
 
@@ -347,12 +347,12 @@ Worth knowing before you depend on it, since the whole implementation is short e
 
 This component ships in [Animalert](https://animalert.app), a live lost-pet reporting platform, on iOS and Android. It is on the [App Store](https://apps.apple.com/app/id6480419312) and [Google Play](https://play.google.com/store/apps/details?id=com.animalert), so what follows is checkable rather than asserted.
 
-It backs a dozen direct call sites there plus a shared form field, itself reused a dozen more times, so essentially every select in the app is this component. The most demanding case is the country dial-code picker on the phone-number field: roughly 250 countries, rendered as a native `UIMenu` behind an invisible overlay rather than as a 250-row JS list. That field is the reason the overlay pattern and the `0.02` constant are documented above rather than rediscovered by everyone.
+It backs a dozen direct call sites there plus a shared form field, itself reused a dozen more times, so essentially every select in the app is this component. The most demanding case is the country dial-code picker on the phone-number field: roughly 250 countries, rendered as a native list rather than as a 250-row JS list. That field is also why 3.0 exists: on some Android phones its invisible overlay did not open, and an invisible picker beside an elevated field is a race for the touch that the picker can lose.
 
 ## Troubleshooting
 
 **The component takes up space but shows nothing.**
-Give the `style` an explicit `width` and `height`, or Flexbox constraints that resolve to real numbers. A native view with a zero-sized frame lays its subviews out into nothing.
+On Android that is expected without children: wrap your field in it. On iOS, without children, give the `style` an explicit `width` and `height`, or Flexbox constraints that resolve to real numbers. A native view with a zero-sized frame lays its subviews out into nothing.
 
 **The app crashes on launch, or the iOS build cannot find `RTNSelectSpec/Props.h`.**
 `RCT_NEW_ARCH_ENABLED=1` was not set when you ran `pod install`. Set it, re-run `pod install`, and rebuild. There is no old-bridge fallback.
@@ -360,8 +360,11 @@ Give the `style` an explicit `width` and `height`, or Flexbox constraints that r
 **An Android build fails on a missing method in `RTNSelectManagerInterface`.**
 Update to 1.1.1 or later, where the `setTextColor` stub the generated interface expects was added.
 
-**My invisible overlay does not respond to taps on iOS.**
-Its `opacity` is `0` (or below `0.02`). See the overlay pattern section.
+**My field does not open the list.**
+Check it is a child of the `Select`, not a sibling under an invisible one. If you still use the 2.x overlay, its `opacity` must be at least `0.02` (iOS `hitTest` drops taps at alpha <= 0.01), and on Android nothing elevated may sit over it. Wrapping avoids both.
+
+**A button inside my field never fires.**
+Expected: the `Select` takes every touch inside it. Move the button out of the `Select`.
 
 **Android ignores `mode` or `textColor`.**
 Expected, they are iOS only. See Platform differences.

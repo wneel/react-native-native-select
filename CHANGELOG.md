@@ -4,6 +4,34 @@ All notable changes to this project are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Dates are npm publish dates. Where the git history does not record what shipped in a release, the entry says so instead of filling the gap.
 
+## [3.0.0] - 2026-10-14
+
+Wrap your own field in the `Select`: its children are what the user sees, and a tap on them opens the native list.
+
+### Changed
+
+- **Breaking, Android.** The view is no longer an `AppCompatSpinner`. It is a container (`ReactViewGroup`) around its children that opens a `ListPopupWindow`, the window the spinner itself opened in dropdown mode, anchored under the field. Without children it draws nothing, so a bare `Select` that relied on the spinner showing the selected row now needs a field inside it.
+- **iOS.** Children are drawn inside the menu button, so the button is what the user touches and what the menu grows out of. With children, the menu is used whatever `mode` says; without children nothing changes.
+- **Android emits for every pick, including the row that was already selected,** the way iOS always has. A `selectedIndex` written from JS never emits, since the list is the only source of picks now.
+
+### Why
+
+An invisible overlay competes with its siblings for the touch. Android hands a touch to the sibling with the highest elevation first, whatever the order in JS, so an elevated field beside the overlay could leave the list closed. A parent sees the touch before any of its children, so a wrapped field cannot lose it. Wrapping also removes the `opacity: 0.02` constant and the background trick that hid the spinner's arrow.
+
+### Added
+
+- `pointerEvents="none"` turns the Android `Select` off without unmounting it. React Native applies that prop only in its own `View` manager, so this one applies it itself.
+- The Android list sizes itself like the spinner's did: as wide as its widest row, never narrower than the field and never wider than the screen, with the current row checked and scrolled into view.
+- The open list is dismissed when the `Select` unmounts or its `options` change.
+
+### Removed
+
+- The Android spinner's `setBackground(null)` (1.2.0) and its prop-ordering, echo and stale-row workarounds (2.0.2). None of them applies to a view that no longer is a spinner.
+
+### Unchanged
+
+- The props and the event. A `Select` without children is still a tappable box on both platforms, so 2.x overlays keep working while you move them.
+
 ## [2.0.2] - 2026-09-10
 
 Android only. Nothing on the iOS side changed, and the JS API is untouched.

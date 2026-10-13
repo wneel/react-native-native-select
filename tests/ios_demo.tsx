@@ -41,6 +41,18 @@ const App = () => {
 				/>
 				<Text>selected : {array[second]}</Text>
 			</View>
+			<View>
+				{/* With children the menu grows out of the app's own field, whatever `mode` says. */}
+				<Select
+					options={array}
+					selectedIndex={second}
+					onValueChange={(e) => setSecond(e.nativeEvent.index)}
+				>
+					<View style={{ width: 190, height: 50, backgroundColor: "#2483ff", borderRadius: 12, alignItems: "center", justifyContent: "center" }}>
+						<Text style={{color: "white", fontWeight: 700}} numberOfLines={1}>{array[second]}</Text>
+					</View>
+				</Select>
+			</View>
 		</View>
 	);
 }

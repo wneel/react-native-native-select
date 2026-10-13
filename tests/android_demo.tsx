@@ -1,8 +1,8 @@
-
 import { useState } from "react";
-import { Text, View } from "react-native"
+import { ScrollView, Text, View } from "react-native"
 import { Select } from "react-native-native-select";
 
+// Runs on both platforms. Each field is drawn inside its Select, the way an app ships it.
 const App = () => {
 	const array = [
 		"Apple",
@@ -11,63 +11,56 @@ const App = () => {
 		"Really really really long text"
 	]
 
-	const [first, setFirst] = useState(0);
-	const [second, setSecond] = useState(0);
+	const [selected, setSelected] = useState(0);
 
 	return (
-		<View style={{
-			flex: 1,
+		<ScrollView contentContainerStyle={{
+			flexGrow: 1,
 			alignItems: "center",
 			justifyContent: "space-evenly",
 			backgroundColor: "white"
 		}}>
 			<Text>react-native-native-select</Text>
-			<View>
-				<Text>style it as you want :</Text>
-				<View style={{flexDirection: "row", marginBlock: 25}}>
-					<View style={{ width: 100, height: 50, backgroundColor: "#2483ff", marginRight: 12, borderRadius: 12, alignItems: "center", justifyContent: "center" }}>
-						<Text style={{color: "white", fontWeight: 700}}>{array[second]}</Text>
-						<Select
-							style={{ width: 100, height: 50, opacity: 0, position: "absolute" }}
-							mode="dropdown"
-							options={array}
-							selectedIndex={second}
-							onValueChange={(e) => setSecond(e.nativeEvent.index)}
-						/>
-					</View>
-					<View style={{ width: 100, height: 50, backgroundColor: "#000000AA", marginRight: 12, borderRadius: 12, alignItems: "center", justifyContent: "center" }}>
-						<Text style={{color: "white", fontWeight: 700}}>Click me !</Text>
-						<Select
-							style={{ width: 100, height: 50, opacity: 0, position: "absolute" }}
-							mode="dropdown"
-							options={array}
-							selectedIndex={second}
-							onValueChange={(e) => setSecond(e.nativeEvent.index)}
-						/>
-					</View>
-					<View style={{ width: 100, height: 50, backgroundColor: "#000000AA" }}>
-						<Select
-							style={{ flex: 1, opacity: 0 }}
-							mode="dropdown"
-							options={array}
-							selectedIndex={second}
-							onValueChange={(e) => setSecond(e.nativeEvent.index)}
-						/>
-					</View>
-				</View>
-				<Text>selected : {array[second]}</Text>
-			</View>
-			<View>
-				<Text>because it's not working properly with the native style :</Text>
+			<View style={{flexDirection: "row", marginBlock: 25}}>
+				{/* A filled field. */}
 				<Select
-					style={{ width: 300, height: 100 }}
+					style={{ marginRight: 12 }}
 					options={array}
-					selectedIndex={first}
-					onValueChange={(e) => { console.d(e.nativeEvent);setFirst(e.nativeEvent.index) }}
-				/>
-				<Text>selected : {array[first]}</Text>
+					selectedIndex={selected}
+					onValueChange={(e) => setSelected(e.nativeEvent.index)}
+				>
+					<View style={{ width: 100, height: 50, backgroundColor: "#2483ff", borderRadius: 12, alignItems: "center", justifyContent: "center" }}>
+						<Text style={{color: "white", fontWeight: 700}} numberOfLines={1}>{array[selected]}</Text>
+					</View>
+				</Select>
+				{/* A field with an elevated child: the shadow must not take the tap. */}
+				<Select
+					style={{ marginRight: 12 }}
+					options={array}
+					selectedIndex={selected}
+					onValueChange={(e) => setSelected(e.nativeEvent.index)}
+				>
+					<Text style={{ width: 100, height: 50, lineHeight: 50, textAlign: "center", backgroundColor: "white", borderRadius: 12, borderWidth: 2, borderColor: "#2483ff", elevation: 10, shadowOpacity: 0.2, shadowRadius: 8 }}>Click me</Text>
+				</Select>
+				{/* A wide field against a short list: the list keeps the field's width. */}
+				<Select
+					options={array.slice(0, 2)}
+					selectedIndex={selected % 2}
+					onValueChange={(e) => setSelected(e.nativeEvent.index)}
+				>
+					<View style={{ width: 100, height: 50, backgroundColor: "#000000AA", borderRadius: 12 }} />
+				</Select>
 			</View>
-		</View>
+			<Text>selected : {array[selected]}</Text>
+			{/* A field turned off without unmounting it. */}
+			<Select
+				pointerEvents="none"
+				options={array}
+				selectedIndex={selected}
+			>
+				<Text style={{ padding: 12, color: "#999" }}>Disabled: {array[selected]}</Text>
+			</Select>
+		</ScrollView>
 	);
 }
 

@@ -32,9 +32,7 @@ cd ios && RCT_NEW_ARCH_ENABLED=1 pod install && cd ..
 Then copy one of the demo screens in as your app entry point:
 
 * [`tests/ios_demo.tsx`](./tests/ios_demo.tsx) renders both iOS modes side by side, the wheel (`dialog`) and the pull-down (`dropdown`), each with a long option to check text truncation.
-* [`tests/android_demo.tsx`](./tests/android_demo.tsx) renders the invisible-overlay pattern three ways plus a bare spinner, which is the Android case worth exercising because the native widget does not reliably reflect a controlled `selectedIndex`.
-
-Note that `tests/android_demo.tsx` calls `console.d`, which comes from the host app it was written in. Change it to `console.log` when you run it.
+* [`tests/android_demo.tsx`](./tests/android_demo.tsx) wraps four fields, on both platforms: a filled one, one with an elevated child (the shadow must not take the tap), a wide one against a short list, and one turned off with `pointerEvents="none"`. It sits in a `ScrollView`, so check that a drag starting on a field scrolls instead of opening the list.
 
 What to rebuild after what:
 
@@ -50,7 +48,7 @@ What to rebuild after what:
 There is no CI here, so this is on you and on me:
 
 * iOS `dialog` mode and iOS `dropdown` mode, since they are two different UIKit views behind one prop.
-* Android, including one select inside an invisible overlay at `opacity: 0.02`.
+* Android, with a wrapped field, including one whose child has `elevation`.
 * If you touched props, that codegen still succeeds on both platforms. A prop that exists in TypeScript but not in `SelectViewManager` breaks the Android build (that was the 1.1.1 fix).
 * If you touched anything iOS-only, that Android still builds. `mode` and `textColor` are no-op stubs there on purpose, and they need to stay present.
 

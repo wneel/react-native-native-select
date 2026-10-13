@@ -17,6 +17,10 @@ using namespace facebook::react;
 @implementation RTNSelect {
 	UIPickerView *_pickerView;
 	UIButton *_button;
+	// The React children, drawn inside the button so the button is what the user touches and
+	// what the menu grows out of. It takes no touch of its own.
+	UIView *_childrenHost;
+	BOOL _dropdownMode;
 
 	std::vector<std::string> _options;
 	NSInteger _selectedIndex;
@@ -49,6 +53,12 @@ using namespace facebook::react;
 			_button.showsMenuAsPrimaryAction = YES;
 		}
 
+		_childrenHost = [[UIView alloc] initWithFrame:_button.bounds];
+		_childrenHost.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+		_childrenHost.userInteractionEnabled = NO;
+		[_button addSubview:_childrenHost];
+
+		_dropdownMode = NO;
 		_button.hidden = YES;
 
 		[self addSubview:_pickerView];
@@ -64,6 +74,38 @@ using namespace facebook::react;
 	[super layoutSubviews];
 	_pickerView.frame = self.bounds;
 	_button.frame = self.bounds;
+	// Fabric lays the children out in this view's coordinates, and the host sits at the same
+	// origin inside a button that covers this view, so the two spaces are the same.
+	_childrenHost.frame = _button.bounds;
+}
+
+// ============================================================================
+// Children: the field the app draws
+// ============================================================================
+
+- (BOOL)hasChildren {
+	return _childrenHost.subviews.count > 0;
+}
+
+- (void)mountChildComponentView:(UIView<RCTComponentViewProtocol> *)childComponentView index:(NSInteger)index
+{
+	[_childrenHost insertSubview:childComponentView atIndex:index];
+	[self applyPresentation];
+}
+
+- (void)unmountChildComponentView:(UIView<RCTComponentViewProtocol> *)childComponentView index:(NSInteger)index
+{
+	[childComponentView removeFromSuperview];
+	[self applyPresentation];
+}
+
+// A Select with children is a trigger: it opens the menu whatever `mode` says, since a wheel
+// cannot be drawn over the app's own field. Without children, `mode` picks the widget.
+- (void)applyPresentation {
+	BOOL trigger = _dropdownMode || [self hasChildren];
+	_pickerView.hidden = trigger;
+	_button.hidden = !trigger;
+	[self updateButtonMenu];
 }
 
 // ============================================================================
@@ -99,7 +141,14 @@ using namespace facebook::react;
 
 			if (i == _selectedIndex) {
 				action.state = UIMenuElementStateOn;
-				[_button setTitle:title forState:UIControlStateNormal];
+				if ([self hasChildren]) {
+					// The app draws the value itself. The button stays readable to VoiceOver.
+					[_button setTitle:nil forState:UIControlStateNormal];
+					_button.accessibilityLabel = title;
+				} else {
+					[_button setTitle:title forState:UIControlStateNormal];
+					_button.accessibilityLabel = nil;
+				}
 			}
 
 			[actions addObject:action];
@@ -183,13 +232,8 @@ using namespace facebook::react;
 		}
 
 		if (modeChanged || optionsChanged) {
-			if (newViewProps.mode == RTNSelectMode::Dropdown) {
-				self->_pickerView.hidden = YES;
-				self->_button.hidden = NO;
-			} else {
-				self->_pickerView.hidden = NO;
-				self->_button.hidden = YES;
-			}
+			self->_dropdownMode = newViewProps.mode == RTNSelectMode::Dropdown;
+			[self applyPresentation];
 		}
 	});
 }
@@ -221,13 +265,8 @@ using namespace facebook::react;
 
 - (void)setMode:(NSString *)mode {
 	dispatch_async(dispatch_get_main_queue(), ^{
-		if ([mode isEqualToString:@"dropdown"]) {
-			self->_pickerView.hidden = YES;
-			self->_button.hidden = NO;
-		} else {
-			self->_pickerView.hidden = NO;
-			self->_button.hidden = YES;
-		}
+		self->_dropdownMode = [mode isEqualToString:@"dropdown"];
+		[self applyPresentation];
 	});
 }
 
