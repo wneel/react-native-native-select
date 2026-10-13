@@ -1,6 +1,6 @@
 {
 	"name": "react-native-native-select",
-	"version": "2.0.2",
+	"version": "3.0.0",
 	"description": "react-native-native-select is a strictly native, performant Select component for React Native built exclusively for the New Architecture.",
 	"main": "src/index.ts",
 	"react-native": "src/index.ts",
