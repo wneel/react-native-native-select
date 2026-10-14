@@ -336,8 +336,9 @@ Three things to get right there:
 Worth knowing before you depend on it, since the whole implementation is short enough to audit in one sitting.
 
 * **A true Fabric component via codegen.** `src/RTNSelectNativeComponent.ts` is a single `codegenNativeComponent<NativeProps>('RTNSelect')` call, and `codegenConfig` in `package.json` names the spec `RTNSelectSpec`. The rest of the implementation is Objective-C++ and Java.
+* **Registered with Fabric by `codegenConfig.ios.componentProvider`.** Current React Native (checked on 0.87.1) only registers a third-party iOS component with Fabric when the package names it there. Before 3.0.1 it did not, so iOS quietly drew the select through React Native's legacy-view interop layer, which cannot host children. There is no old-architecture view manager any more, so a missing registration now fails loudly instead.
 * **The package ships raw TypeScript.** `main`, `react-native`, `types` and `source` all point at `src/index.ts`. There is no build step and no `dist/`, so the code you read on GitHub is exactly the code your bundler compiles.
-* **Two TypeScript files, three iOS source files, four Java files.** No dependencies, no vendored assets, no generated code checked in.
+* **Two TypeScript files, two iOS source files, four Java files.** No dependencies, no vendored assets, no generated code checked in.
 * **iOS event path:** selection funnels through one `selectIndex:fromSource:` method that updates state, re-marks the `UIMenu` checkmark, and emits through the Fabric `RTNSelectEventEmitter`.
 * **Android touch path:** `SelectView` extends React Native's `ReactViewGroup`, intercepts every touch inside it, and opens the list on a tap (a `GestureDetector` single tap, so a drag that a parent scroll view takes over does not open it).
 * **Android event path:** `SelectView` dispatches `topValueChange`, which `getExportedCustomDirectEventTypeConstants` maps to the JS prop `onValueChange`.

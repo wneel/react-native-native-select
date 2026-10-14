@@ -24,7 +24,6 @@ using namespace facebook::react;
 
 	std::vector<std::string> _options;
 	NSInteger _selectedIndex;
-	RCTDirectEventBlock _onValueChangeLegacy;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -182,17 +181,10 @@ using namespace facebook::react;
 			.index = (int)index
 		});
 	}
-
-	if (_onValueChangeLegacy) {
-		_onValueChangeLegacy(@{
-			@"value": [NSString stringWithUTF8String:_options[index].c_str()],
-			@"index": @(index)
-		});
-	}
 }
 
 // ============================================================================
-// 1. FABRIC (New Architecture) Implementation
+// Props
 // ============================================================================
 
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps
@@ -213,11 +205,16 @@ using namespace facebook::react;
 		_selectedIndex = newViewProps.selectedIndex;
 	}
 
+	// The block runs a turn later, by which time another update may have replaced the props
+	// object, so it takes plain values rather than a reference into it.
+	UIColor *newColor = textColorChanged ? RCTUIColorFromSharedColor(newViewProps.textColor) : nil;
+	NSInteger newIndex = newViewProps.selectedIndex;
+	BOOL newDropdownMode = newViewProps.mode == RTNSelectMode::Dropdown;
+
 	[super updateProps:props oldProps:oldProps];
 
 	dispatch_async(dispatch_get_main_queue(), ^{
 		if (textColorChanged) {
-			UIColor *newColor = RCTUIColorFromSharedColor(newViewProps.textColor);
 			[self applyTextColor:newColor];
 		}
 
@@ -226,62 +223,20 @@ using namespace facebook::react;
 			[self updateButtonMenu];
 		}
 
-		if (indexChanged && newViewProps.selectedIndex < self->_options.size()) {
-			[self->_pickerView selectRow:newViewProps.selectedIndex inComponent:0 animated:YES];
+		if (indexChanged && newIndex >= 0 && newIndex < (NSInteger)self->_options.size()) {
+			[self->_pickerView selectRow:newIndex inComponent:0 animated:YES];
 			[self updateButtonMenu];
 		}
 
 		if (modeChanged || optionsChanged) {
-			self->_dropdownMode = newViewProps.mode == RTNSelectMode::Dropdown;
+			self->_dropdownMode = newDropdownMode;
 			[self applyPresentation];
 		}
 	});
 }
 
 // ============================================================================
-// 2. LEGACY / INTEROP Implementation
-// ============================================================================
-
-- (void)setOptions:(NSArray<NSString *> *)options {
-	_options.clear();
-	for (NSString *option in options) {
-		_options.push_back([option UTF8String]);
-	}
-	dispatch_async(dispatch_get_main_queue(), ^{
-		[self->_pickerView reloadAllComponents];
-		[self updateButtonMenu];
-	});
-}
-
-- (void)setSelectedIndex:(NSInteger)selectedIndex {
-	_selectedIndex = selectedIndex;
-	dispatch_async(dispatch_get_main_queue(), ^{
-		if (selectedIndex < self->_options.size()) {
-			[self->_pickerView selectRow:selectedIndex inComponent:0 animated:YES];
-			[self updateButtonMenu];
-		}
-	});
-}
-
-- (void)setMode:(NSString *)mode {
-	dispatch_async(dispatch_get_main_queue(), ^{
-		self->_dropdownMode = [mode isEqualToString:@"dropdown"];
-		[self applyPresentation];
-	});
-}
-
-- (void)setTextColor:(UIColor *)color {
-	dispatch_async(dispatch_get_main_queue(), ^{
-		[self applyTextColor:color];
-	});
-}
-
-- (void)setOnValueChange:(RCTDirectEventBlock)onValueChange {
-	_onValueChangeLegacy = onValueChange;
-}
-
-// ============================================================================
-// 3. UIPickerView Delegate Methods
+// 2. UIPickerView Delegate Methods
 // ============================================================================
 
 - (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView {

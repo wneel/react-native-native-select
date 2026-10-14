@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Dates are npm publish dates. Where the git history does not record what shipped in a release, the entry says so instead of filling the gap.
 
+## [3.0.1] - 2026-10-14
+
+iOS only.
+
+### Fixed
+
+- **The iOS component is now rendered by Fabric itself.** The package never declared `codegenConfig.ios.componentProvider`, which current React Native needs to register a third-party iOS component (checked on 0.87.1), so iOS drew every `Select` through the legacy-view interop layer. The overlay pattern hid that; 3.0's children did not: the interop layer mounted them beside the menu button instead of inside it, so the button's own title showed next to the app's field and the field took the tap.
+- The async prop update no longer reads the props through a reference that a later update can replace.
+
+### Removed
+
+- `ios/RTNSelectManager.mm` and the legacy setters in `RTNSelect.mm`, the old-architecture path. Without them a missing Fabric registration fails loudly instead of degrading silently.
+
 ## [3.0.0] - 2026-10-14
 
 Wrap your own field in the `Select`: its children are what the user sees, and a tap on them opens the native list.
