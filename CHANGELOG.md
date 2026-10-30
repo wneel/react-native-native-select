@@ -4,6 +4,14 @@ All notable changes to this project are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Dates are npm publish dates. Where the git history does not record what shipped in a release, the entry says so instead of filling the gap.
 
+## [3.0.2] - 2026-10-30
+
+Android only.
+
+### Fixed
+
+- **A `Select` inside a `Pressable` (or any JS touchable) now opens on a real finger.** A finger held still still sends a stream of small moves. Once a JS responder is granted, React Native makes that responder's view intercept every move (`JSResponderHandler.onInterceptTouchEvent`, checked on 0.87.1), even when it asked not to block the native responder, so the `Select` received a cancel and the list never opened. A synthetic tap (`adb shell input tap`, most test runners) sends no move, which is why tests passed while phones failed. The `Select` now keeps its ancestors from intercepting while the touch is still a tap, and lets go once the finger travels past the touch slop, so a drag that starts on the field still scrolls the view around it.
+
 ## [3.0.1] - 2026-10-14
 
 iOS only.
@@ -150,7 +158,11 @@ Android only. Nothing on the iOS side changed, and the JS API is untouched.
 - Demo screens for both platforms in `tests/ios_demo.tsx` and `tests/android_demo.tsx`.
 - README with the three preview GIFs (dropdown, wheel, Android).
 
-[Unreleased]: https://github.com/wneel/react-native-native-select/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/wneel/react-native-native-select/compare/v3.0.2...HEAD
+[3.0.2]: https://github.com/wneel/react-native-native-select/compare/v3.0.1...v3.0.2
+[3.0.1]: https://github.com/wneel/react-native-native-select/compare/v3.0.0...v3.0.1
+[3.0.0]: https://github.com/wneel/react-native-native-select/compare/v2.0.2...v3.0.0
+[2.0.2]: https://github.com/wneel/react-native-native-select/compare/v2.0.0...v2.0.2
 [2.0.0]: https://github.com/wneel/react-native-native-select/compare/v1.2.1...v2.0.0
 [1.2.1]: https://github.com/wneel/react-native-native-select/releases/tag/v1.2.1
 [1.2.0]: https://github.com/wneel/react-native-native-select/commit/af2cdc8

@@ -6,7 +6,9 @@ import android.graphics.drawable.Drawable;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
 import android.widget.ListView;
@@ -59,9 +61,15 @@ public class SelectView extends ReactViewGroup {
 	 */
 	private final GestureDetector tapDetector;
 
+	/** The distance a finger may travel and still be tapping, the same one the detector uses. */
+	private final int touchSlop;
+	private float touchDownX;
+	private float touchDownY;
+
 	public SelectView(Context context) {
 		super(context);
 		setClickable(true);
+		touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
 		tapDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
 			@Override
 			public boolean onDown(@NonNull MotionEvent event) {
@@ -97,8 +105,47 @@ public class SelectView extends ReactViewGroup {
 		if (!PointerEvents.canBeTouchTarget(getPointerEvents())) {
 			return super.onTouchEvent(event);
 		}
+		holdTouchWhileTapping(event);
 		tapDetector.onTouchEvent(event);
 		return true;
+	}
+
+	/**
+	 * Keeps the ancestors from intercepting while the touch can still be a tap.
+	 *
+	 * A finger held still on the field still sends a stream of small moves. When the Select sits
+	 * inside a JS responder (a Pressable, any touchable), React Native makes that responder's view
+	 * intercept every move once the responder is granted, which sends this view a cancel: the tap
+	 * never ends and the list never opens. A synthetic tap sends no move, so tests miss it.
+	 *
+	 * Holding the touch until the finger leaves the tap region fixes that, and letting go past the
+	 * touch slop keeps a drag that starts on the field for the scroll view around it.
+	 */
+	private void holdTouchWhileTapping(MotionEvent event) {
+		ViewParent parent = getParent();
+		if (parent == null) {
+			return;
+		}
+		switch (event.getActionMasked()) {
+			case MotionEvent.ACTION_DOWN:
+				touchDownX = event.getX();
+				touchDownY = event.getY();
+				parent.requestDisallowInterceptTouchEvent(true);
+				break;
+			case MotionEvent.ACTION_MOVE:
+				float dx = event.getX() - touchDownX;
+				float dy = event.getY() - touchDownY;
+				if (dx * dx + dy * dy > touchSlop * touchSlop) {
+					parent.requestDisallowInterceptTouchEvent(false);
+				}
+				break;
+			case MotionEvent.ACTION_UP:
+			case MotionEvent.ACTION_CANCEL:
+				parent.requestDisallowInterceptTouchEvent(false);
+				break;
+			default:
+				break;
+		}
 	}
 
 	@Override
