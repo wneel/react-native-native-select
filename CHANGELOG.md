@@ -4,6 +4,14 @@ All notable changes to this project are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Dates are npm publish dates. Where the git history does not record what shipped in a release, the entry says so instead of filling the gap.
 
+## [3.0.3] - 2026-11-05
+
+Android only.
+
+### Fixed
+
+- **A `Select` tapped while the keyboard is up now opens at full height.** The list is measured once, against the room around the field at the moment it opens. With the keyboard up that room stops at the keyboard, and in a sheet that rides the keyboard the field then slides back down as the keyboard closes: the list followed the field but kept its height of a few rows, until a scroll made it measure again. On Gboard the list also took the keyboard's focus, which turned the number pad into a letter keyboard under it. The `Select` now closes the keyboard first and opens the list once the field has held still for three frames (600 ms at most), so the list is measured where it will be used. With the keyboard down nothing changes: the list opens on the tap.
+
 ## [3.0.2] - 2026-10-30
 
 Android only.
@@ -159,6 +167,7 @@ Android only. Nothing on the iOS side changed, and the JS API is untouched.
 - README with the three preview GIFs (dropdown, wheel, Android).
 
 [Unreleased]: https://github.com/wneel/react-native-native-select/compare/v3.0.2...HEAD
+[3.0.3]: https://github.com/wneel/react-native-native-select/compare/v3.0.2...v3.0.3
 [3.0.2]: https://github.com/wneel/react-native-native-select/compare/v3.0.1...v3.0.2
 [3.0.1]: https://github.com/wneel/react-native-native-select/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/wneel/react-native-native-select/compare/v2.0.2...v3.0.0

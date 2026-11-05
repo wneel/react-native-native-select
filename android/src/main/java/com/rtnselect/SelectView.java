@@ -3,12 +3,15 @@ package com.rtnselect;
 import android.content.Context;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.SystemClock;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.ViewTreeObserver;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
 import android.widget.ListView;
@@ -16,6 +19,8 @@ import android.widget.Spinner;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.ListPopupWindow;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.uimanager.PointerEvents;
@@ -50,10 +55,19 @@ public class SelectView extends ReactViewGroup {
 	/** Keeps a wide list off the screen edges, in dp. */
 	private static final int SCREEN_MARGIN_DP = 16;
 
+	/** Frames the field must hold still, with the keyboard gone, before the list is measured. */
+	private static final int STILL_FRAMES = 3;
+
+	/** Opens the list anyway if the field is still moving by then, in ms. */
+	private static final long SETTLE_TIMEOUT_MS = 600;
+
 	private final List<String> options = new ArrayList<>();
 	private ArrayAdapter<String> adapter;
 	private int selectedIndex = NO_SELECTION;
 	private ListPopupWindow popup;
+
+	/** Set while the list waits for the keyboard to close and the field to settle. */
+	private ViewTreeObserver.OnPreDrawListener settleWatcher;
 
 	/**
 	 * A tap, not a press: a drag that starts on the field belongs to the scroll view around it,
@@ -187,14 +201,81 @@ public class SelectView extends ReactViewGroup {
 	}
 
 	// ============================================================================
-	// The list
+	// Opening
 	// ============================================================================
 
 	private void open() {
 		if (adapter == null || options.isEmpty() || getWindowToken() == null) {
 			return;
 		}
-		if (popup != null && popup.isShowing()) {
+		if ((popup != null && popup.isShowing()) || settleWatcher != null) {
+			return;
+		}
+		if (isKeyboardVisible()) {
+			closeKeyboardThenShow();
+			return;
+		}
+		show();
+	}
+
+	// ============================================================================
+	// The keyboard
+	// ============================================================================
+
+	/**
+	 * The list is measured once, against the room around the field when it opens. A tap while a
+	 * text field has the keyboard up would measure the room above the keyboard, and in a sheet that
+	 * rides the keyboard the field then slides down as the keyboard closes, so the list kept a
+	 * height of a few rows under a field that now had the whole screen. The keyboard is closed
+	 * first, and the list opens once the field has stopped moving.
+	 */
+	private void closeKeyboardThenShow() {
+		InputMethodManager keyboard = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+		if (keyboard != null) {
+			keyboard.hideSoftInputFromWindow(getWindowToken(), 0);
+		}
+		final ViewTreeObserver observer = getViewTreeObserver();
+		final long deadline = SystemClock.uptimeMillis() + SETTLE_TIMEOUT_MS;
+		final int[] last = new int[] { Integer.MIN_VALUE, Integer.MIN_VALUE };
+		final int[] stillFrames = new int[] { 0 };
+		settleWatcher = () -> {
+			int[] position = new int[2];
+			getLocationOnScreen(position);
+			boolean moved = position[0] != last[0] || position[1] != last[1];
+			last[0] = position[0];
+			last[1] = position[1];
+			stillFrames[0] = moved || isKeyboardVisible() ? 0 : stillFrames[0] + 1;
+			if (stillFrames[0] >= STILL_FRAMES || SystemClock.uptimeMillis() >= deadline) {
+				stopSettleWatcher();
+				show();
+			} else {
+				// Asks for the next frame even when nothing else would draw one.
+				postInvalidateOnAnimation();
+			}
+			return true;
+		};
+		observer.addOnPreDrawListener(settleWatcher);
+		postInvalidateOnAnimation();
+	}
+
+	private boolean isKeyboardVisible() {
+		WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(this);
+		return insets != null && insets.isVisible(WindowInsetsCompat.Type.ime());
+	}
+
+	private void stopSettleWatcher() {
+		if (settleWatcher != null) {
+			getViewTreeObserver().removeOnPreDrawListener(settleWatcher);
+			settleWatcher = null;
+		}
+	}
+
+	// ============================================================================
+	// The list
+	// ============================================================================
+
+	private void show() {
+		if (adapter == null || options.isEmpty() || getWindowToken() == null) {
 			return;
 		}
 
@@ -278,6 +359,7 @@ public class SelectView extends ReactViewGroup {
 	@Override
 	protected void onDetachedFromWindow() {
 		// A popup outliving its anchor leaks the window and crashes on the next touch.
+		stopSettleWatcher();
 		dismissPopup();
 		super.onDetachedFromWindow();
 	}
